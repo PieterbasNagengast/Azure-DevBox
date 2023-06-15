@@ -16,8 +16,7 @@ param gracePeriodMinutes int
 ])
 param stopOnDisconnect string
 
-// #disable-next-line BCP081
-resource ProjectPool 'Microsoft.DevCenter/projects/pools@2023-01-01-preview' = {
+resource ProjectPool 'Microsoft.DevCenter/projects/pools@2023-04-01' = {
   name: '${DevCenterProjectName}/${devBoxDefinitionName}'
   location: location
   properties: {

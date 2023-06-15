@@ -1,140 +1,809 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.17.1.54307",
-      "templateHash": "1609330488248673767"
+      "version": "0.18.4.5664",
+      "templateHash": "8847394916865751890"
     }
   },
   "parameters": {
     "location": {
       "type": "string",
-      "defaultValue": "[resourceGroup().location]"
+      "defaultValue": "[deployment().location]"
+    },
+    "subscriptionID": {
+      "type": "string",
+      "metadata": {
+        "description": "Subscription ID where Dev Center will be deployed"
+      }
     },
     "DevCenterName": {
       "type": "string",
-      "defaultValue": "DevCenter01"
+      "metadata": {
+        "description": "Dev Center Name"
+      }
     },
-    "DevVNETname": {
+    "resourceGroupName": {
       "type": "string",
-      "defaultValue": "DevVNET01"
+      "metadata": {
+        "description": "Default resource Group"
+      }
+    },
+    "networks": {
+      "type": "array",
+      "metadata": {
+        "description": "Array of Networks to be used in Dev Center. Name, Location and Subnet resourceID"
+      }
+    },
+    "projects": {
+      "type": "array",
+      "metadata": {
+        "description": "Array of Projects and Pools to be used in Dev Center. "
+      }
+    },
+    "definitions": {
+      "type": "array",
+      "metadata": {
+        "description": "Array of Image Definitions to be used in Dev Center"
+      }
+    }
+  },
+  "variables": {
+    "DevCenter": {
+      "name": "[parameters('DevCenterName')]",
+      "resourceGroupName": "[parameters('resourceGroupName')]",
+      "subscriptionID": "[parameters('subscriptionID')]",
+      "networks": "[parameters('networks')]",
+      "projects": "[parameters('projects')]",
+      "definitions": "[parameters('definitions')]"
     }
   },
   "resources": [
     {
-      "type": "Microsoft.Network/virtualNetworks",
-      "apiVersion": "2022-11-01",
-      "name": "[parameters('DevVNETname')]",
-      "location": "[parameters('location')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "DevCenterInfra",
+      "subscriptionId": "[variables('DevCenter').subscriptionID]",
+      "location": "[deployment().location]",
       "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "10.0.0.0/16"
-          ]
+        "expressionEvaluationOptions": {
+          "scope": "inner"
         },
-        "subnets": [
-          {
-            "name": "Subnet-1",
-            "properties": {
-              "addressPrefix": "10.0.0.0/24"
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "DevCenter": {
+            "value": "[variables('DevCenter')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.18.4.5664",
+              "templateHash": "2386149244483738863"
             }
           },
-          {
-            "name": "Subnet-2",
-            "properties": {
-              "addressPrefix": "10.0.1.0/24"
+          "parameters": {
+            "location": {
+              "type": "string",
+              "defaultValue": "[deployment().location]"
+            },
+            "DevCenter": {
+              "type": "object"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2022-09-01",
+              "name": "[parameters('DevCenter').resourceGroupName]",
+              "location": "[parameters('location')]"
+            },
+            {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "DevCenter",
+              "resourceGroup": "[parameters('DevCenter').resourceGroupName]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "devCenterName": {
+                    "value": "[parameters('DevCenter').name]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.18.4.5664",
+                      "templateHash": "17956610931817614125"
+                    }
+                  },
+                  "parameters": {
+                    "location": {
+                      "type": "string"
+                    },
+                    "devCenterName": {
+                      "type": "string"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.DevCenter/devcenters",
+                      "apiVersion": "2023-04-01",
+                      "name": "[parameters('devCenterName')]",
+                      "location": "[parameters('location')]",
+                      "identity": {
+                        "type": "SystemAssigned"
+                      }
+                    }
+                  ],
+                  "outputs": {
+                    "Id": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.DevCenter/devcenters', parameters('devCenterName'))]"
+                    },
+                    "Name": {
+                      "type": "string",
+                      "value": "[parameters('devCenterName')]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('DevCenter').resourceGroupName)]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "devCenterBuiltinImages",
+                "count": "[length(parameters('DevCenter').definitions)]"
+              },
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('DeCenterImage{0}', copyIndex())]",
+              "resourceGroup": "[parameters('DevCenter').resourceGroupName]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "DevCenterDefinitionName": {
+                    "value": "[parameters('DevCenter').definitions[copyIndex()].name]"
+                  },
+                  "DevCenterGalleryImageName": {
+                    "value": "[parameters('DevCenter').definitions[copyIndex()].image]"
+                  },
+                  "DevCenterGalleryName": {
+                    "value": "Default"
+                  },
+                  "DevCenterName": {
+                    "value": "[parameters('DevCenter').name]"
+                  },
+                  "imageSKU": {
+                    "value": "[parameters('DevCenter').definitions[copyIndex()].vmSKU]"
+                  },
+                  "imageStorageType": {
+                    "value": "[parameters('DevCenter').definitions[copyIndex()].diskSize]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.18.4.5664",
+                      "templateHash": "4228528105312879496"
+                    }
+                  },
+                  "parameters": {
+                    "location": {
+                      "type": "string"
+                    },
+                    "DevCenterName": {
+                      "type": "string"
+                    },
+                    "DevCenterGalleryName": {
+                      "type": "string"
+                    },
+                    "DevCenterGalleryImageName": {
+                      "type": "string"
+                    },
+                    "DevCenterDefinitionName": {
+                      "type": "string"
+                    },
+                    "imageSKU": {
+                      "type": "string",
+                      "allowedValues": [
+                        "general_a_8c32gb_v1"
+                      ]
+                    },
+                    "imageStorageType": {
+                      "type": "string",
+                      "allowedValues": [
+                        "ssd_256gb",
+                        "ssd_512gb",
+                        "ssd_1024gb"
+                      ]
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.DevCenter/devcenters/devboxdefinitions",
+                      "apiVersion": "2023-04-01",
+                      "name": "[format('{0}/{1}', parameters('DevCenterName'), parameters('DevCenterDefinitionName'))]",
+                      "location": "[parameters('location')]",
+                      "properties": {
+                        "imageReference": {
+                          "id": "[resourceId('Microsoft.DevCenter/devcenters/galleries/images', parameters('DevCenterName'), parameters('DevCenterGalleryName'), parameters('DevCenterGalleryImageName'))]"
+                        },
+                        "sku": {
+                          "name": "[parameters('imageSKU')]"
+                        },
+                        "osStorageType": "[parameters('imageStorageType')]"
+                      }
+                    }
+                  ],
+                  "outputs": {
+                    "imageID": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.DevCenter/devcenters/galleries/images', parameters('DevCenterName'), parameters('DevCenterGalleryName'), parameters('DevCenterGalleryImageName'))]"
+                    },
+                    "imageDescription": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.DevCenter/devcenters/galleries/images', parameters('DevCenterName'), parameters('DevCenterGalleryName'), parameters('DevCenterGalleryImageName')), '2023-04-01').description]"
+                    },
+                    "imagePublisher": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.DevCenter/devcenters/galleries/images', parameters('DevCenterName'), parameters('DevCenterGalleryName'), parameters('DevCenterGalleryImageName')), '2023-04-01').publisher]"
+                    },
+                    "imageOffer": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.DevCenter/devcenters/galleries/images', parameters('DevCenterName'), parameters('DevCenterGalleryName'), parameters('DevCenterGalleryImageName')), '2023-04-01').offer]"
+                    },
+                    "imageSKU": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.DevCenter/devcenters/galleries/images', parameters('DevCenterName'), parameters('DevCenterGalleryName'), parameters('DevCenterGalleryImageName')), '2023-04-01').sku]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('DevCenter').resourceGroupName)]"
+              ]
+            }
+          ],
+          "outputs": {
+            "devCenterID": {
+              "type": "string",
+              "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('DevCenter').resourceGroupName), 'Microsoft.Resources/deployments', 'DevCenter'), '2022-09-01').outputs.Id.value]"
+            },
+            "devCenterName": {
+              "type": "string",
+              "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('DevCenter').resourceGroupName), 'Microsoft.Resources/deployments', 'DevCenter'), '2022-09-01').outputs.Name.value]"
             }
           }
-        ]
+        }
       }
     },
     {
-      "type": "Microsoft.DevCenter/devcenters",
-      "apiVersion": "2023-04-01",
-      "name": "[parameters('DevCenterName')]",
-      "location": "[parameters('location')]",
-      "identity": {
-        "type": "SystemAssigned"
-      }
-    },
-    {
-      "type": "Microsoft.DevCenter/devcenters/devboxdefinitions",
-      "apiVersion": "2023-04-01",
-      "name": "[format('{0}/{1}', parameters('DevCenterName'), 'DevBoxDefinition01')]",
-      "location": "[parameters('location')]",
+      "copy": {
+        "name": "devCenterNetworkConnections",
+        "count": "[length(variables('DevCenter').networks)]"
+      },
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('DevCenterNetworkConnection{0}', copyIndex())]",
+      "subscriptionId": "[split(variables('DevCenter').networks[copyIndex()].subnetID, '/')[2]]",
+      "location": "[deployment().location]",
       "properties": {
-        "imageReference": {
-          "id": "[format('{0}/images/microsoftwindowsdesktop_windows-ent-cpc_win11-22h2-ent-cpc-os', resourceId('Microsoft.DevCenter/devcenters/galleries', parameters('DevCenterName'), 'Default'))]"
+        "expressionEvaluationOptions": {
+          "scope": "inner"
         },
-        "sku": {
-          "name": "general_a_8c32gb_v1"
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[variables('DevCenter').networks[copyIndex()].location]"
+          },
+          "subnetID": {
+            "value": "[variables('DevCenter').networks[copyIndex()].subnetID]"
+          },
+          "resourceGroupName": {
+            "value": "[variables('DevCenter').resourceGroupName]"
+          },
+          "DevCenterName": {
+            "value": "[reference(subscriptionResourceId(variables('DevCenter').subscriptionID, 'Microsoft.Resources/deployments', 'DevCenterInfra'), '2022-09-01').outputs.devCenterName.value]"
+          },
+          "DevCenterSubscriptionID": {
+            "value": "[variables('DevCenter').subscriptionID]"
+          },
+          "networkAttachName": {
+            "value": "[variables('DevCenter').networks[copyIndex()].name]"
+          }
         },
-        "osStorageType": "ssd_1024gb"
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.18.4.5664",
+              "templateHash": "13310659695718531333"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "subnetID": {
+              "type": "string"
+            },
+            "resourceGroupName": {
+              "type": "string"
+            },
+            "DevCenterName": {
+              "type": "string"
+            },
+            "DevCenterSubscriptionID": {
+              "type": "string"
+            },
+            "networkAttachName": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "networkNamePrefix": "[format('{0}-{1}', split(parameters('subnetID'), '/')[8], last(split(parameters('subnetID'), '/')))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2022-09-01",
+              "name": "[parameters('resourceGroupName')]",
+              "location": "[parameters('location')]"
+            },
+            {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('{0}-NetworkConnection', variables('networkNamePrefix'))]",
+              "resourceGroup": "[parameters('resourceGroupName')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "SubnetID": {
+                    "value": "[parameters('subnetID')]"
+                  },
+                  "NetworkConnectionName": {
+                    "value": "[format('{0}-NetworkConnection', variables('networkNamePrefix'))]"
+                  },
+                  "networkingResourceGroupName": {
+                    "value": "[format('{0}-nics', parameters('resourceGroupName'))]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.18.4.5664",
+                      "templateHash": "14804920549042160721"
+                    }
+                  },
+                  "parameters": {
+                    "location": {
+                      "type": "string"
+                    },
+                    "SubnetID": {
+                      "type": "string"
+                    },
+                    "NetworkConnectionName": {
+                      "type": "string"
+                    },
+                    "networkingResourceGroupName": {
+                      "type": "string"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.DevCenter/networkConnections",
+                      "apiVersion": "2023-04-01",
+                      "name": "[parameters('NetworkConnectionName')]",
+                      "location": "[parameters('location')]",
+                      "properties": {
+                        "domainJoinType": "AzureADJoin",
+                        "subnetId": "[parameters('SubnetID')]",
+                        "networkingResourceGroupName": "[parameters('networkingResourceGroupName')]"
+                      }
+                    }
+                  ],
+                  "outputs": {
+                    "networkConnectionID": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.DevCenter/networkConnections', parameters('NetworkConnectionName'))]"
+                    },
+                    "networkConnectionName": {
+                      "type": "string",
+                      "value": "[parameters('NetworkConnectionName')]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('resourceGroupName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[parameters('networkAttachName')]",
+              "subscriptionId": "[parameters('DevCenterSubscriptionID')]",
+              "resourceGroup": "[parameters('resourceGroupName')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "devCenterName": {
+                    "value": "[parameters('DevCenterName')]"
+                  },
+                  "networkConnectionID": {
+                    "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-NetworkConnection', variables('networkNamePrefix'))), '2022-09-01').outputs.networkConnectionID.value]"
+                  },
+                  "networkAttachName": {
+                    "value": "[parameters('networkAttachName')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.18.4.5664",
+                      "templateHash": "858985495124830160"
+                    }
+                  },
+                  "parameters": {
+                    "devCenterName": {
+                      "type": "string"
+                    },
+                    "networkConnectionID": {
+                      "type": "string"
+                    },
+                    "networkAttachName": {
+                      "type": "string"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.DevCenter/devcenters/attachednetworks",
+                      "apiVersion": "2023-04-01",
+                      "name": "[format('{0}/{1}', parameters('devCenterName'), parameters('networkAttachName'))]",
+                      "properties": {
+                        "networkConnectionId": "[parameters('networkConnectionID')]"
+                      }
+                    }
+                  ],
+                  "outputs": {
+                    "NetworkAttachName": {
+                      "type": "string",
+                      "value": "[format('{0}/{1}', parameters('devCenterName'), parameters('networkAttachName'))]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-NetworkConnection', variables('networkNamePrefix')))]"
+              ]
+            }
+          ]
+        }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.DevCenter/devcenters', parameters('DevCenterName'))]"
+        "[subscriptionResourceId(variables('DevCenter').subscriptionID, 'Microsoft.Resources/deployments', 'DevCenterInfra')]"
       ]
     },
     {
-      "type": "Microsoft.DevCenter/networkConnections",
-      "apiVersion": "2023-04-01",
-      "name": "[format('{0}-connection', parameters('DevVNETname'))]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "domainJoinType": "AzureADJoin",
-        "subnetId": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('DevVNETname')), '2022-11-01').subnets[0].id]",
-        "networkingResourceGroupName": "[format('{0}-nics', resourceGroup().name)]"
+      "copy": {
+        "name": "devCenterProjectsAndPools",
+        "count": "[length(variables('DevCenter').projects)]"
       },
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', parameters('DevVNETname'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.DevCenter/projects",
-      "apiVersion": "2023-04-01",
-      "name": "Project01",
-      "location": "[parameters('location')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('DevCenterProject{0}', copyIndex())]",
+      "subscriptionId": "[variables('DevCenter').subscriptionID]",
+      "location": "[deployment().location]",
       "properties": {
-        "devCenterId": "[resourceId('Microsoft.DevCenter/devcenters', parameters('DevCenterName'))]",
-        "description": "This is a sample project"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.DevCenter/devcenters', parameters('DevCenterName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.DevCenter/devcenters/attachednetworks",
-      "apiVersion": "2023-04-01",
-      "name": "[format('{0}/{1}', parameters('DevCenterName'), format('{0}-attach', parameters('DevVNETname')))]",
-      "properties": {
-        "networkConnectionId": "[resourceId('Microsoft.DevCenter/networkConnections', format('{0}-connection', parameters('DevVNETname')))]"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.DevCenter/devcenters', parameters('DevCenterName'))]",
-        "[resourceId('Microsoft.DevCenter/networkConnections', format('{0}-connection', parameters('DevVNETname')))]"
-      ]
-    },
-    {
-      "type": "Microsoft.DevCenter/projects/pools",
-      "apiVersion": "2023-04-01",
-      "name": "[format('{0}/{1}', 'Project01', 'Pool01')]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "licenseType": "Windows_Client",
-        "networkConnectionName": "[format('{0}-attach', parameters('DevVNETname'))]",
-        "devBoxDefinitionName": "DevBoxDefinition01",
-        "stopOnDisconnect": {
-          "gracePeriodMinutes": 60,
-          "status": "Enabled"
+        "expressionEvaluationOptions": {
+          "scope": "inner"
         },
-        "localAdministrator": "Enabled"
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "resourceGroupName": {
+            "value": "[variables('DevCenter').resourceGroupName]"
+          },
+          "devCenterID": {
+            "value": "[reference(subscriptionResourceId(variables('DevCenter').subscriptionID, 'Microsoft.Resources/deployments', 'DevCenterInfra'), '2022-09-01').outputs.devCenterID.value]"
+          },
+          "devCenterProject": {
+            "value": "[variables('DevCenter').projects[copyIndex()]]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.18.4.5664",
+              "templateHash": "10094716466719961250"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "devCenterProject": {
+              "type": "object"
+            },
+            "devCenterID": {
+              "type": "string"
+            },
+            "resourceGroupName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2022-09-01",
+              "name": "[parameters('resourceGroupName')]",
+              "location": "[parameters('location')]"
+            },
+            {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('DevCenter{0}', parameters('devCenterProject').name)]",
+              "resourceGroup": "[parameters('resourceGroupName')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "ProjectDescription": {
+                    "value": "[parameters('devCenterProject').description]"
+                  },
+                  "ProjectName": {
+                    "value": "[parameters('devCenterProject').name]"
+                  },
+                  "roleAssignments": {
+                    "value": "[parameters('devCenterProject').roleAssignments]"
+                  },
+                  "DevCenterID": {
+                    "value": "[parameters('devCenterID')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.18.4.5664",
+                      "templateHash": "420992917662695061"
+                    }
+                  },
+                  "parameters": {
+                    "location": {
+                      "type": "string"
+                    },
+                    "roleAssignments": {
+                      "type": "array"
+                    },
+                    "ProjectName": {
+                      "type": "string"
+                    },
+                    "ProjectDescription": {
+                      "type": "string"
+                    },
+                    "DevCenterID": {
+                      "type": "string"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.DevCenter/projects",
+                      "apiVersion": "2023-04-01",
+                      "name": "[parameters('ProjectName')]",
+                      "location": "[parameters('location')]",
+                      "properties": {
+                        "devCenterId": "[parameters('DevCenterID')]",
+                        "description": "[parameters('ProjectDescription')]"
+                      }
+                    },
+                    {
+                      "copy": {
+                        "name": "roleAssignment",
+                        "count": "[length(parameters('roleAssignments'))]"
+                      },
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2022-04-01",
+                      "scope": "[format('Microsoft.DevCenter/projects/{0}', parameters('ProjectName'))]",
+                      "name": "[guid(resourceId('Microsoft.DevCenter/projects', parameters('ProjectName')), parameters('roleAssignments')[copyIndex()].roleID, parameters('roleAssignments')[copyIndex()].principalID)]",
+                      "properties": {
+                        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('roleAssignments')[copyIndex()].roleID)]",
+                        "principalId": "[parameters('roleAssignments')[copyIndex()].principalID]",
+                        "principalType": "[parameters('roleAssignments')[copyIndex()].principalType]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.DevCenter/projects', parameters('ProjectName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "Id": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.DevCenter/projects', parameters('ProjectName'))]"
+                    },
+                    "Name": {
+                      "type": "string",
+                      "value": "[parameters('ProjectName')]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('resourceGroupName'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "DevCenterPools",
+                "count": "[length(parameters('devCenterProject').pools)]"
+              },
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('{0}pool{1}', format('DevCenter{0}', parameters('devCenterProject').name), copyIndex())]",
+              "resourceGroup": "[parameters('resourceGroupName')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "DevCenterProjectName": {
+                    "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', format('DevCenter{0}', parameters('devCenterProject').name)), '2022-09-01').outputs.Name.value]"
+                  },
+                  "devBoxDefinitionName": {
+                    "value": "[parameters('devCenterProject').pools[copyIndex()].definitionName]"
+                  },
+                  "networkConnectionName": {
+                    "value": "[parameters('devCenterProject').pools[copyIndex()].networkConnectionName]"
+                  },
+                  "gracePeriodMinutes": {
+                    "value": "[parameters('devCenterProject').pools[copyIndex()].gracePeriodMinutes]"
+                  },
+                  "localAdministrator": {
+                    "value": "[parameters('devCenterProject').pools[copyIndex()].localAdministrator]"
+                  },
+                  "stopOnDisconnect": {
+                    "value": "[parameters('devCenterProject').pools[copyIndex()].stopOnDisconnect]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.18.4.5664",
+                      "templateHash": "5239517206722308206"
+                    }
+                  },
+                  "parameters": {
+                    "location": {
+                      "type": "string"
+                    },
+                    "DevCenterProjectName": {
+                      "type": "string"
+                    },
+                    "LicenseType": {
+                      "type": "string",
+                      "defaultValue": "Windows_Client"
+                    },
+                    "networkConnectionName": {
+                      "type": "string"
+                    },
+                    "devBoxDefinitionName": {
+                      "type": "string"
+                    },
+                    "localAdministrator": {
+                      "type": "string",
+                      "allowedValues": [
+                        "Enabled",
+                        "Disabled"
+                      ]
+                    },
+                    "gracePeriodMinutes": {
+                      "type": "int",
+                      "minValue": 60
+                    },
+                    "stopOnDisconnect": {
+                      "type": "string",
+                      "allowedValues": [
+                        "Enabled",
+                        "Disabled"
+                      ]
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.DevCenter/projects/pools",
+                      "apiVersion": "2023-04-01",
+                      "name": "[format('{0}/{1}', parameters('DevCenterProjectName'), parameters('devBoxDefinitionName'))]",
+                      "location": "[parameters('location')]",
+                      "properties": {
+                        "licenseType": "[parameters('LicenseType')]",
+                        "networkConnectionName": "[parameters('networkConnectionName')]",
+                        "devBoxDefinitionName": "[parameters('devBoxDefinitionName')]",
+                        "stopOnDisconnect": {
+                          "gracePeriodMinutes": "[parameters('gracePeriodMinutes')]",
+                          "status": "[parameters('stopOnDisconnect')]"
+                        },
+                        "localAdministrator": "[parameters('localAdministrator')]"
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', format('DevCenter{0}', parameters('devCenterProject').name))]",
+                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('resourceGroupName'))]"
+              ]
+            }
+          ]
+        }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.DevCenter/devcenters/devboxdefinitions', parameters('DevCenterName'), 'DevBoxDefinition01')]",
-        "[resourceId('Microsoft.DevCenter/devcenters/attachednetworks', parameters('DevCenterName'), format('{0}-attach', parameters('DevVNETname')))]",
-        "[resourceId('Microsoft.DevCenter/projects', 'Project01')]"
+        "[subscriptionResourceId(variables('DevCenter').subscriptionID, 'Microsoft.Resources/deployments', 'DevCenterInfra')]",
+        "devCenterNetworkConnections"
       ]
     }
   ]

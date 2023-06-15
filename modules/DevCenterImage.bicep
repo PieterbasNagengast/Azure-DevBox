@@ -15,21 +15,21 @@ param imageSKU string
 ])
 param imageStorageType string
 
-resource DevCenter 'Microsoft.DevCenter/devcenters@2023-01-01-preview' existing = {
+resource DevCenter 'Microsoft.DevCenter/devcenters@2023-04-01' existing = {
   name: DevCenterName
 }
 
-resource DevCenterGallery 'Microsoft.DevCenter/devcenters/galleries@2023-01-01-preview' existing = {
+resource DevCenterGallery 'Microsoft.DevCenter/devcenters/galleries@2023-04-01' existing = {
   name: DevCenterGalleryName
   parent: DevCenter
 }
 
-resource image 'Microsoft.DevCenter/devcenters/galleries/images@2023-01-01-preview' existing = {
+resource image 'Microsoft.DevCenter/devcenters/galleries/images@2023-04-01' existing = {
   name: DevCenterGalleryImageName
   parent: DevCenterGallery
 }
 
-resource Definition 'Microsoft.DevCenter/devcenters/devboxdefinitions@2023-01-01-preview' = {
+resource Definition 'Microsoft.DevCenter/devcenters/devboxdefinitions@2023-04-01' = {
   name: DevCenterDefinitionName
   parent: DevCenter
   location: location

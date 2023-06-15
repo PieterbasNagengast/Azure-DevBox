@@ -1,24 +1,48 @@
 {
   // See https://aka.ms/bicep/config for more information on Bicep configuration options
   // Press CTRL+SPACE/CMD+SPACE at any location to see Intellisense suggestions
-  "cloud": {
-    "currentProfile": "AzureCloud",
-    "profiles": {
-      "AzureCloud": {
-        "resourceManagerEndpoint": "https://management.azure.com",
-        "activeDirectoryAuthority": "https://login.microsoftonline.com"
-      }
-    }
-  },
   "analyzers": {
     "core": {
       "verbose": false,
       "enabled": true,
       "rules": {
         "no-unused-params": {
-          "level": "warning"
+          "level": "error"
+        },
+        "no-unused-vars": {
+          "level": "error"
         },
         "use-recent-api-versions": {
+          "level": "warning"
+        },
+        "adminusername-should-not-be-literal": {
+          "level": "error"
+        },
+        "secure-secrets-in-params": {
+          "level": "error"
+        },
+        "no-hardcoded-location": {
+          "level": "warning"
+        },
+        "secure-parameter-default": {
+          "level": "warning"
+        },
+        "secure-params-in-nested-deploy": {
+          "level": "warning"
+        },
+        "simplify-json-null": {
+          "level": "warning"
+        },
+        "outputs-should-not-contain-secrets": {
+          "level": "error"
+        },
+        "no-unnecessary-dependson": {
+          "level": "warning"
+        },
+        "simplify-interpolation": {
+          "level": "warning"
+        },
+        "use-resource-symbol-reference": {
           "level": "warning"
         }
       }
