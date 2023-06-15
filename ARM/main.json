@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.18.4.5664",
-      "templateHash": "8847394916865751890"
+      "templateHash": "685634045527846409"
     }
   },
   "parameters": {
@@ -40,7 +40,7 @@
     "projects": {
       "type": "array",
       "metadata": {
-        "description": "Array of Projects and Pools to be used in Dev Center. "
+        "description": "Array of Projects and Pools to be used in Dev Center"
       }
     },
     "definitions": {
