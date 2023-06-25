@@ -36,5 +36,8 @@ module DevCenterPools 'modules/DevCenterProjectPools.bicep' = [for (pool, i) in 
     gracePeriodMinutes: pool.gracePeriodMinutes
     localAdministrator: pool.localAdministrator
     stopOnDisconnect: pool.stopOnDisconnect
+    deploySchedule: !empty(pool.schedule)
+    scheduleTime: !empty(pool.schedule) ? pool.schedule.time : ''
+    scheduleTimeZone: !empty(pool.schedule) ? pool.schedule.timeZone : ''
   }
 }]

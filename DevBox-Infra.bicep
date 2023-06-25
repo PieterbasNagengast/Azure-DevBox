@@ -27,7 +27,7 @@ module devCenterBuiltinImages 'modules/DevCenterImage.bicep' = [for (definition,
     DevCenterDefinitionName: definition.name
     DevCenterGalleryImageName: definition.image
     DevCenterGalleryName: 'Default'
-    DevCenterName: DevCenter.name
+    DevCenterName: devCenter.outputs.Name
     imageSKU: definition.vmSKU
     imageStorageType: definition.diskSize
   }

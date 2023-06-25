@@ -1,6 +1,18 @@
-# Azure Dev Box 
+# Azure Dev Box <!-- omit in toc -->
 
 This example deploys Azure Dev Box (Dev Center) based on existing VNET's, multiple projects and multiple pools and uses the builtin image gallery of Dev Center to deploy Dev Boxes.
+
+## TOC <!-- omit in toc -->
+
+1. [Deployment flow](#deployment-flow)
+2. [Parameters](#parameters)
+   1. [general parameters](#general-parameters)
+   2. [Networks parameter block](#networks-parameter-block)
+   3. [Projects parameter block](#projects-parameter-block)
+   4. [Definitions parameter block](#definitions-parameter-block)
+3. [Supported VM Size](#supported-vm-size)
+4. [Supported Disk Sizes](#supported-disk-sizes)
+5. [Supported builtin images by Dev Box](#supported-builtin-images-by-dev-box)
 
 ## Deployment flow
 
@@ -12,12 +24,12 @@ flowchart LR;
     main.bicep-->DevBox-Projects.bicep
     end
     DevBox-Infra.bicep-->DevCenter
-    DevBox-Networks.bicep-->VirtualNetworkConnections
+    DevBox-Networks.bicep-->|Scope VNET Subscription|VirtualNetworkConnections
     DevBox-Projects.bicep-->Projects
     subgraph modules
     DevCenter-->DevBoxDefinitions
     VirtualNetworkConnections-->DevBoxAttachNetworkConnections
-    Projects-->Pools
+    Projects-->Pools-->Schedule
     end
 ```
 
@@ -63,6 +75,10 @@ param projects = [
         localAdministrator: 'Enabled' // Enable or Disabled
         stopOnDisconnect: 'Enabled' // Enable or Disabled
         gracePeriodMinutes: 60 // Minimal 60
+        schedule: {
+          time: '19:00' // time in ##:## format
+          timeZone: 'Europe/Amsterdam' // Timezone in format Continent/City
+        }
       }
     ]
     roleAssignments: [ // Role Assignments will be set on Project. Can have one or multiple role assignments

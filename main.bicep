@@ -19,6 +19,7 @@ param projects array
 @description('Array of Image Definitions to be used in Dev Center')
 param definitions array
 
+// Dev Center Object
 var DevCenter = {
   name: DevCenterName
   resourceGroupName: resourceGroupName

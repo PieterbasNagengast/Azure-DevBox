@@ -33,6 +33,10 @@ param projects = [
         localAdministrator: 'Enabled'
         stopOnDisconnect: 'Enabled'
         gracePeriodMinutes: 60
+        schedule: {
+          time: '19:00'
+          timeZone: 'Europe/Amsterdam'
+        }
       }
       {
         name: 'W11_M365-Pool'
@@ -41,6 +45,10 @@ param projects = [
         localAdministrator: 'Enabled'
         stopOnDisconnect: 'Enabled'
         gracePeriodMinutes: 60
+        schedule: {
+          time: '19:00'
+          timeZone: 'Europe/Amsterdam'
+        }
       }
       {
         name: 'W11_M365_VS2022-Pool'
@@ -49,6 +57,10 @@ param projects = [
         localAdministrator: 'Enabled'
         stopOnDisconnect: 'Enabled'
         gracePeriodMinutes: 60
+        schedule: {
+          time: '19:00'
+          timeZone: 'Europe/Amsterdam'
+        }
       }
     ]
     roleAssignments: [
